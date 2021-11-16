@@ -21,16 +21,25 @@ from pyspark.sql import SparkSession
 
 
 def authorization(cfg):
-    url = f"{cfg.host}{cfg.extra['AUTH']['endpoint']}"
-    headers = {'content-type': cfg.extra['content_type']}
-    data = {'username': cfg.extra['AUTH']['username'], 'password': cfg.extra['AUTH']['password']}
+    logging.info(f"cfg = {cfg}")
+    extra = json.loads(cfg.extra)
+    logging.info(f"extra = {cfg.extra}")
+    logging.info(f"extra['AUTH'] = {extra['AUTH']}")
+    logging.info(f"extra['AUTH']['endpoint'] = {extra['AUTH']['endpoint']}")
+    url = f"{cfg.host}{extra['AUTH']['endpoint']}"
+    logging.info(f"url = {url}")
+    headers = {'content-type': extra['content_type']}
+    logging.info(f"headers = {headers}")
+    data = {'username': extra['AUTH']['username'], 'password': extra['AUTH']['password']}
+    logging.info(f"data = {data}")
     r = requests.post(url, headers=headers, data=json.dumps(data), timeout=10)
-    return r.json()[cfg.extra['AUTH']['token']]
+    return r.json()[extra['AUTH']['token']]
 
 
 def get_data(cfg, token, dt):
     url = f"{cfg.host}{cfg.schema}"
-    headers = {"content-type": cfg.extra['content_type'], "Authorization": f"{cfg.extra['API']['auth']} {token}"}
+    extra = json.loads(cfg.extra)
+    headers = {"content-type": extra['content_type'], "Authorization": f"{extra['API']['auth']} {token}"}
     data = {"date": dt}
     r = requests.get(url, headers=headers, data=json.dumps(data), timeout=10)
     return r.json()
@@ -40,12 +49,13 @@ def load_to_bronze_API(**kwargs):
     ds = kwargs.get('ds', str(date.today()))
     api_conn = BaseHook.get_connection('out_of_stock_api')
     hdfs_conn = BaseHook.get_connection('HDFS_WEB_CLIENT')
+    extra = json.loads(api_conn.extra)
     logging.info(f"api_host = {api_conn.host}")
     token = authorization(api_conn)
     logging.info(f"token = {token}")
     data = get_data(api_conn, token, ds)
     logging.info(f"data = {data}")
-    save_file = f"{api_conn.extra['filename']}.json"
+    save_file = f"{extra['filename']}.json"
     url = f"{api_conn.host}{api_conn.schema}"
     logging.info(f"Writing file {save_file} from {url} to Bronze")
     logging.info(f"client_data = {hdfs_conn.host}")
