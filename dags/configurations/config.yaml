@@ -2,7 +2,7 @@ API:
   url: &url 'https://robot-dreams-de-api.herokuapp.com'
   endpoint: '/out_of_stock'
   content_type: &content 'application/json'
-  date: &dt '2021-01-02'
+  date: &dt '2021-11-17'
   auth: 'JWT'
 
 AUTH:

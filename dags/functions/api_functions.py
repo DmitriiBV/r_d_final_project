@@ -53,6 +53,7 @@ def app_API():
     cfg_api = config.get_config('API')
     token = authorization(cfg_auth)
     data = get_data(cfg_api, token)
+    print(data)
     #save_data_to_file(data, config)
 
 
