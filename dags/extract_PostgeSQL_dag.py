@@ -6,6 +6,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from functions.load_to_bronze import load_to_bronze_spark
 from functions.load_to_silver import load_to_silver
+from airflow.hooks.base_hook import BaseHook
 
 file_path = f"{os.path.abspath(os.path.dirname(__file__))}/"
 directory_path = "configurations"
@@ -18,7 +19,13 @@ sys.path.append(config_dir_path)
 from functions.config import Config
 
 config = Config(config_abspath)
-tables_to_load = config.get_config('TABLES_DSHOP')
+
+pg_conn = BaseHook.get_connection('oltp_postgres')
+
+# tables_to_load = config.get_config('TABLES_DSHOP')
+
+tables_to_load = pg_conn.extra.split()
+
 load_to_bronze_tasks = []
 load_to_silver_tasks = []
 
@@ -28,37 +35,23 @@ default_args = {
 }
 
 dag = DAG(
-    dag_id="load_postgreSQL_dag",
+    dag_id="extract_postgreSQL_dag",
     description="Load data from PostgreSQL data base to Data Lake",
     schedule_interval="@daily",
-    start_date=datetime(2021, 11, 10),
+    start_date=datetime(2021, 11, 16),
     default_args=default_args
 )
 
+
 dummy1 = DummyOperator(
-    task_id='start_pipline',
-    dag=dag
-)
-dummy2 = DummyOperator(
     task_id='start_load_to_bronze',
     dag=dag
 )
-dummy3 = DummyOperator(
+dummy2 = DummyOperator(
     task_id='finish_load_to_bronze',
     dag=dag
 )
-dummy4 = DummyOperator(
-    task_id='start_load_to_silver',
-    dag=dag
-)
-dummy5 = DummyOperator(
-    task_id='finish_load_to_silver',
-    dag=dag
-)
-dummy6 = DummyOperator(
-    task_id='finish_pipline',
-    dag=dag
-)
+
 
 
 for table in tables_to_load:
@@ -71,15 +64,7 @@ for table in tables_to_load:
             dag=dag
         )
     )
-    load_to_silver_tasks.append(
-        PythonOperator(
-            task_id=f"{table}_load_to_silver",
-            python_callable=load_to_silver,
-            op_kwargs={'table': table},
-            provide_context=True,
-            dag=dag
-        )
-    )
 
 
-dummy1 >> dummy2 >> load_to_bronze_tasks >> dummy3 >> dummy4 >> load_to_silver_tasks >> dummy5 >> dummy6
+
+dummy1 >> load_to_bronze_tasks >> dummy2
