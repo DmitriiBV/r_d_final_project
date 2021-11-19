@@ -2,35 +2,19 @@ import json
 import os
 import sys
 from datetime import datetime
-
 from airflow import DAG
 from airflow.hooks.base_hook import BaseHook
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
-from functions.load_to_bronze import load_to_bronze_spark, load_to_bronze_postgreSQL
-from functions.load_to_silver import load_to_silver
+from functions.load_to_bronze import  load_to_bronze_postgreSQL
 
 file_path = f"{os.path.abspath(os.path.dirname(__file__))}/"
-directory_path = "configurations"
-config_path = "config.yaml"
-config_abspath = os.path.join(file_path, directory_path, config_path)
-config_dir_path = f"{file_path}{directory_path}/"
 sys.path.append(file_path)
-sys.path.append(config_dir_path)
-
-from functions.config import Config
-
-config = Config(config_abspath)
 
 pg_conn = BaseHook.get_connection('oltp_postgres')
-
-# tables_to_load = config.get_config('TABLES_DSHOP')
-#tables_to_load = ['orders', 'products', 'departments', 'aisles', 'clients', 'stores', 'store_types', 'location_areas']
 tables_to_load = json.loads(pg_conn.extra)['tables']
-#tables_to_load = pg_conn.extra.split()
-
 load_to_bronze_tasks = []
-load_to_silver_tasks = []
+
 
 default_args = {
     "owner": "airflow",
@@ -45,7 +29,6 @@ dag = DAG(
     default_args=default_args
 )
 
-
 dummy1 = DummyOperator(
     task_id='start_load_to_bronze',
     dag=dag
@@ -54,8 +37,6 @@ dummy2 = DummyOperator(
     task_id='finish_load_to_bronze',
     dag=dag
 )
-
-
 
 for table in tables_to_load:
     load_to_bronze_tasks.append(
@@ -67,7 +48,5 @@ for table in tables_to_load:
             dag=dag
         )
     )
-
-
 
 dummy1 >> load_to_bronze_tasks >> dummy2
