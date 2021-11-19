@@ -40,8 +40,8 @@ default_args = {
 dag = DAG(
     dag_id="extract_postgreSQL_dag",
     description="Load data from PostgreSQL data base to Data Lake",
-    schedule_interval="@daily",
-    start_date=datetime(2021, 11, 16),
+    schedule_interval="0 0 * * *",
+    start_date=datetime(2021, 11, 19),
     default_args=default_args
 )
 

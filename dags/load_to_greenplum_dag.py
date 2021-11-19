@@ -9,6 +9,7 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 from functions.load_to_bronze import load_to_bronze_spark, load_to_bronze_postgreSQL
 from functions.load_to_silver import load_to_silver, transform_and_load_to_silver
+from functions.load_to_greenplum import load_to_greenplum
 
 file_path = f"{os.path.abspath(os.path.dirname(__file__))}/"
 directory_path = "configurations"
@@ -28,28 +29,28 @@ default_args = {
 }
 
 dag = DAG(
-    dag_id="transform_and_load_to_silver_dag",
+    dag_id="load_to_greenplum_dag",
     description="",
-    schedule_interval="0 1 * * *",
+    schedule_interval="0 2 * * *",
     start_date=datetime(2021, 11, 19),
     default_args=default_args
 )
 
 dummy1 = DummyOperator(
-    task_id='start_load_to_silver',
+    task_id='start_load_to_greenplum',
     dag=dag
 )
 dummy2 = DummyOperator(
-    task_id='finish_load_to_silver',
+    task_id='finish_load_to_greenplum',
     dag=dag
 )
 
-load_to_silver_task = PythonOperator(
-    task_id=f"transform_and_load_to_silver",
-    python_callable=transform_and_load_to_silver,
+load_to_gp = PythonOperator(
+    task_id=f"load_to_greenplum",
+    python_callable=load_to_greenplum,
     op_kwargs={},
     provide_context=True,
     dag=dag
 )
 
-dummy1 >> load_to_silver_task >> dummy2
+dummy1 >> load_to_gp >> dummy2
