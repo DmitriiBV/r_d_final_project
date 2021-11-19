@@ -1,12 +1,14 @@
+import json
 import os
 import sys
 from datetime import datetime
+
 from airflow import DAG
+from airflow.hooks.base_hook import BaseHook
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
-from functions.load_to_bronze import load_to_bronze_spark
+from functions.load_to_bronze import load_to_bronze_spark, load_to_bronze_postgreSQL
 from functions.load_to_silver import load_to_silver
-from airflow.hooks.base_hook import BaseHook
 
 file_path = f"{os.path.abspath(os.path.dirname(__file__))}/"
 directory_path = "configurations"
@@ -23,8 +25,9 @@ config = Config(config_abspath)
 pg_conn = BaseHook.get_connection('oltp_postgres')
 
 # tables_to_load = config.get_config('TABLES_DSHOP')
-
-tables_to_load = pg_conn.extra.split()
+#tables_to_load = ['orders', 'products', 'departments', 'aisles', 'clients', 'stores', 'store_types', 'location_areas']
+tables_to_load = json.loads(pg_conn.extra)['tables']
+#tables_to_load = pg_conn.extra.split()
 
 load_to_bronze_tasks = []
 load_to_silver_tasks = []
@@ -58,7 +61,7 @@ for table in tables_to_load:
     load_to_bronze_tasks.append(
         PythonOperator(
             task_id=f"{table}_load_to_bronze",
-            python_callable=load_to_bronze_spark,
+            python_callable=load_to_bronze_postgreSQL,
             op_kwargs={'table': table},
             provide_context=True,
             dag=dag
