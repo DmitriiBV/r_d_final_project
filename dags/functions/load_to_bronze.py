@@ -130,7 +130,7 @@ def load_to_bronze_postgreSQL(table, **kwargs):
         logging.info(f"object cursor CREATED")
         os.makedirs(os.path.join('.', 'datalake', 'bronze', 'pagila', table), exist_ok=True)
         with open(os.path.join('.', 'datalake', 'bronze', 'pagila', table, ds), 'w', encoding='UTF-8') as csv_file:
-            cursor.copy_expert(f"COPY {table} TO STDOUT WITH HEADER CSV", csv_file)
+            cursor.copy_expert(f"COPY (SELECT * FROM {table}) TO STDOUT WITH HEADER CSV", csv_file)
             logging.info(f"{table}' Successfully loaded to filesystem")
         # with client.write(os.path.join('/', 'datalake', 'bronze', 'pagila', table, ds)) as csv_file:
         #     logging.info(f"Writing table {table} from {pg_con.host} to Bronze")
